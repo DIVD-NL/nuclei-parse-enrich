@@ -6,7 +6,8 @@ It will then enrich the data with additional information from the RipeStat REST 
 in case it doesn't return a abuse contact we perform a whois lookup and parse the email addresses.
 
 Input gets written from standard input, unless a file is provided with the -i flag.
-By default, output gets written to output.csv, but can be specified by the -o flag.
+
+By default, output gets written to output.csv, but can be specified with use of the -o flag.
 
 ## Example Usage
 
