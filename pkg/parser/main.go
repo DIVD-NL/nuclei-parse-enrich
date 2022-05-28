@@ -140,7 +140,6 @@ func (p *Parser) WriteOutput() {
 		p.OutputWriter.Write(line)
 	}
 
-	p.OutputWriter.Flush()
 	logrus.Debug("parser: WriteOutput - end")
 }
 
