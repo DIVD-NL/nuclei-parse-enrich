@@ -52,16 +52,11 @@ func (p *Parser) ProcessNucleiScan() {
 }
 
 func (p *Parser) EnrichScanRecords() {
-	for i, record := range p.ScanRecords {
+	for _, record := range p.ScanRecords {
 		enricher := enricher.NewEnricher(record.Ip)
 		enricher.Enrich()
 
 		p.Enrichment = append(p.Enrichment, enricher.EnrichInfo)
-
-		// stop after 10 records for testing
-		if i == 10 {
-			break
-		}
 	}
 }
 
