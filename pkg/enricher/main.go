@@ -149,7 +149,11 @@ func (e *Enricher) whoisEnrichment() []string {
 		last := ""
 		for i, v := range abusemails {
 			if v == last {
-				abusemails = append(abusemails[:i], abusemails[i+1:]...)
+				if len(abusemails) > i+1 {
+					abusemails = append(abusemails[:i], abusemails[i+1:]...)
+				} else {
+					abusemails = abusemails[:i]
+				}
 			}
 			last = v
 		}
