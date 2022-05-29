@@ -6,7 +6,6 @@ package main
  */
 
 import (
-	"encoding/csv"
 	"os"
 
 	"nuclei-parse-enrich/pkg/parser"
@@ -17,11 +16,11 @@ import (
 
 type Options struct {
 	Input  string `short:"i" long:"input" description:"A file with the nuclei scan output" required:"false"`
-	Output string `short:"o" long:"output" description:"A file to write the enriched output to (default output.csv)" required:"false"`
+	Output string `short:"o" long:"output" description:"A file to write the enriched output to (default output.json)" required:"false"`
 }
 
 func init() {
-	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(os.Stdout)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
@@ -43,7 +42,7 @@ func main() {
 	}
 
 	if noOutputProvided := options.Output == ""; noOutputProvided {
-		options.Output = "output.csv"
+		options.Output = "output.json"
 	}
 
 	if options.Input == "" {
@@ -73,7 +72,11 @@ func main() {
 	}
 
 	parser.ProcessNucleiScan()
+
 	parser.EnrichScanRecords()
+
+	logrus.Debug("parser: EnrichScanRecords - ended")
+
 	parser.MergeScanEnrichment()
 
 	outputFile, err := os.Create(options.Output)
@@ -84,9 +87,8 @@ func main() {
 
 	defer parser.File.Close()
 
-	parser.OutputWriter = csv.NewWriter(outputFile)
-	parser.WriteOutput()
+	parser.WriteOutput(outputFile)
 
-	parser.OutputWriter.Flush()
+	// parser.OutputWriter.Flush()
 
 }
