@@ -34,12 +34,14 @@ func NewEnricher(ip string) *Enricher {
 	}
 }
 
-func (e *Enricher) Enrich() types.EnrichInfo {
+func (e *Enricher) Enrich() *types.EnrichInfo {
 	e.EnrichInfo = types.EnrichInfo{
-		Ip:      e.Ip,
-		Country: "unknown",
-		City:    "unknown",
-		Holder:  "unknown",
+		Ip:           e.Ip,
+		Abuse_source: "",
+		Abuse:        "unknown",
+		Country:      "unknown",
+		City:         "unknown",
+		Holder:       "unknown",
 	}
 
 	// Get abuse info - https://stat.ripe.net/data/abuse-contact-finder/data.<format>?<parameters>
@@ -65,9 +67,6 @@ func (e *Enricher) Enrich() types.EnrichInfo {
 		if len(contacts_from_whois) > 0 {
 			e.EnrichInfo.Abuse = strings.Join(contacts_from_whois, ";")
 			e.EnrichInfo.Abuse_source = "whois"
-		} else {
-			e.EnrichInfo.Abuse = "Not found"
-			e.EnrichInfo.Abuse_source = ""
 		}
 	}
 
@@ -115,7 +114,7 @@ func (e *Enricher) Enrich() types.EnrichInfo {
 		}
 	}
 
-	return e.EnrichInfo
+	return &e.EnrichInfo
 }
 
 func (e *Enricher) whoisEnrichment() []string {
@@ -139,24 +138,15 @@ func (e *Enricher) whoisEnrichment() []string {
 
 	// lower and sort unique
 	func() {
-		mails_lower := make([]string, len(abusemails))
-		for i, v := range abusemails {
-			mails_lower[i] = strings.ToLower(v)
+		m := make(map[string]bool)
+		for _, v := range abusemails {
+			m[strings.ToLower(v)] = true
 		}
-		sort.Strings(mails_lower)
-		abusemails = mails_lower
-
-		last := ""
-		for i, v := range abusemails {
-			if v == last {
-				if len(abusemails) > i+1 {
-					abusemails = append(abusemails[:i], abusemails[i+1:]...)
-				} else {
-					abusemails = abusemails[:i]
-				}
-			}
-			last = v
+		abusemails = make([]string, 0, len(m))
+		for k := range m {
+			abusemails = append(abusemails, k)
 		}
+		sort.Strings(abusemails)
 	}()
 
 	return abusemails
