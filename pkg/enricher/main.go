@@ -21,6 +21,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	whoisRegexp = regexp.MustCompile("[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*")
+)
+
 type Enricher struct {
 	types.EnrichInfo
 	ripeStatSourceApp string
@@ -126,7 +130,6 @@ func (e *Enricher) Enrich() *types.EnrichInfo {
 func (e *Enricher) whoisEnrichment() []string {
 	logrus.Debug("enricher: ripestat has no abuse mails for us, executing whoisEnrichment on e.Ip: ", e.Ip)
 
-	re := regexp.MustCompile("[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*")
 	abusemails := []string{}
 
 	whois, err := whois.Whois(e.Ip)
@@ -136,7 +139,7 @@ func (e *Enricher) whoisEnrichment() []string {
 		return []string{}
 	}
 
-	abusemails = append(abusemails, re.FindAllString(whois, -1)...)
+	abusemails = append(abusemails, whoisRegexp.FindAllString(whois, -1)...)
 
 	if len(abusemails) == 0 {
 		logrus.Debug("enricher: whoisEnrichment - could not find any abuse emails for ", e.Ip)
