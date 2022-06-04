@@ -7,6 +7,7 @@ package enricher
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -47,7 +48,6 @@ func (e *Enricher) Enrich() *types.EnrichInfo {
 	// Get abuse info - https://stat.ripe.net/data/abuse-contact-finder/data.<format>?<parameters>
 	ripestat_abuse_reply, err := e.queryRipeStat("abuse-contact-finder", e.Ip)
 	if err == nil {
-
 		abuse_contacts_ripeStat := []string{}
 
 		if ripestat_abuse_reply != nil {
@@ -172,6 +172,7 @@ func (e *Enricher) queryRipeStat(resource string, query string) (map[string]inte
 		logrus.Debug("enricher: queryRipeStat - could not read response body from ", url)
 		return nil, err
 	}
+
 	var data map[string]interface{}
 
 	err = json.Unmarshal(body, &data)
@@ -179,6 +180,8 @@ func (e *Enricher) queryRipeStat(resource string, query string) (map[string]inte
 		logrus.Debug("enricher: queryRipeStat - could not unmarshal response body from ", url)
 		return nil, err
 	}
-
+	if data == nil {
+		return data, errors.New("enricher: ripestat is down " + url)
+	}
 	return data, nil
 }
