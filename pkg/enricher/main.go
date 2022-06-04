@@ -45,75 +45,81 @@ func (e *Enricher) Enrich() *types.EnrichInfo {
 	}
 
 	// Get abuse info - https://stat.ripe.net/data/abuse-contact-finder/data.<format>?<parameters>
-	ripestat_abuse_reply := e.queryRipeStat("abuse-contact-finder", e.Ip)
-	abuse_contacts_ripeStat := []string{}
+	ripestat_abuse_reply, err := e.queryRipeStat("abuse-contact-finder", e.Ip)
+	if err == nil {
 
-	if ripestat_abuse_reply != nil {
-		abuse_reply_data := ripestat_abuse_reply["data"].(map[string]interface{})
-		if abuse_reply_data != nil {
-			abuse_reply_data_abuse_contacts := abuse_reply_data["abuse_contacts"].([]interface{})
+		abuse_contacts_ripeStat := []string{}
 
-			for _, abuse_contact := range abuse_reply_data_abuse_contacts {
-				abuse_contacts_ripeStat = append(abuse_contacts_ripeStat, abuse_contact.(string))
+		if ripestat_abuse_reply != nil {
+			abuse_reply_data := ripestat_abuse_reply["data"].(map[string]interface{})
+			if abuse_reply_data != nil {
+				abuse_reply_data_abuse_contacts := abuse_reply_data["abuse_contacts"].([]interface{})
+
+				for _, abuse_contact := range abuse_reply_data_abuse_contacts {
+					abuse_contacts_ripeStat = append(abuse_contacts_ripeStat, abuse_contact.(string))
+				}
 			}
 		}
-	}
 
-	if len(abuse_contacts_ripeStat) > 0 {
-		e.EnrichInfo.Abuse = strings.Join(abuse_contacts_ripeStat, ";")
-		e.EnrichInfo.Abuse_source = "ripeSTAT"
-	} else {
-		contacts_from_whois := e.whoisEnrichment()
-		if len(contacts_from_whois) > 0 {
-			e.EnrichInfo.Abuse = strings.Join(contacts_from_whois, ";")
-			e.EnrichInfo.Abuse_source = "whois"
-		}
-	}
-
-	// Get ASN - https://stat.ripe.net/data/network-info/data.json?resource=
-	asn_reply := e.queryRipeStat("network-info", e.Ip)
-	if asn_reply != nil {
-		asn_reply_data := asn_reply["data"].(map[string]interface{})
-
-		if asn_reply_data["prefix"] != nil {
-			e.EnrichInfo.Prefix = asn_reply_data["prefix"].(string)
-		}
-
-		if asn_reply_data["asns"] != nil {
-			asn_reply_data_asn := asn_reply_data["asns"].([]interface{})
-			if len(asn_reply_data_asn) > 0 {
-				e.EnrichInfo.Asn = asn_reply_data_asn[0].(string)
+		if len(abuse_contacts_ripeStat) > 0 {
+			e.EnrichInfo.Abuse = strings.Join(abuse_contacts_ripeStat, ";")
+			e.EnrichInfo.Abuse_source = "ripeSTAT"
+		} else {
+			contacts_from_whois := e.whoisEnrichment()
+			if len(contacts_from_whois) > 0 {
+				e.EnrichInfo.Abuse = strings.Join(contacts_from_whois, ";")
+				e.EnrichInfo.Abuse_source = "whois"
 			}
 		}
-	}
 
-	// Get ASN info from ripeStat - https://stat.ripe.net/data/as-overview/data.json?resource=
-	if e.EnrichInfo.Asn != "unknown" {
-		asn_data := e.queryRipeStat("as-overview", e.EnrichInfo.Asn)
-		if asn_data["data"] != nil {
-			asn_datablock := asn_data["data"].(map[string]interface{})
-			if asn_datablock["holder"] != nil {
-				e.EnrichInfo.Holder = asn_datablock["holder"].(string)
+		// Get ASN - https://stat.ripe.net/data/network-info/data.json?resource=
+		asn_reply, err := e.queryRipeStat("network-info", e.Ip)
+		if err == nil {
+			asn_reply_data := asn_reply["data"].(map[string]interface{})
+
+			if asn_reply_data["prefix"] != nil {
+				e.EnrichInfo.Prefix = asn_reply_data["prefix"].(string)
+			}
+
+			if asn_reply_data["asns"] != nil {
+				asn_reply_data_asn := asn_reply_data["asns"].([]interface{})
+				if len(asn_reply_data_asn) > 0 {
+					e.EnrichInfo.Asn = asn_reply_data_asn[0].(string)
+				}
 			}
 		}
-	}
 
-	// Get geolocation from RipeStat - https://stat.ripe.net/data/geoloc/data.json?resource=
-	if e.EnrichInfo.Prefix != "unknown" {
-		location_data := e.queryRipeStat("maxmind-geo-lite", e.EnrichInfo.Prefix)
-		if location_data["data"] != nil {
-			location_data_located_resources := location_data["data"].(map[string]interface{})["located_resources"].([]interface{})
-			if len(location_data_located_resources) > 0 {
-				location_data_located_resources_locations := location_data_located_resources[0].(map[string]interface{})["locations"].([]interface{})
-				if len(location_data_located_resources_locations) > 0 {
-					location_data_located_resources_location := location_data_located_resources_locations[0].(map[string]interface{})
-					e.EnrichInfo.City = location_data_located_resources_location["city"].(string)
-					e.EnrichInfo.Country = location_data_located_resources_location["country"].(string)
+		// Get ASN info from ripeStat - https://stat.ripe.net/data/as-overview/data.json?resource=
+		if e.EnrichInfo.Asn != "unknown" {
+			asn_data, err := e.queryRipeStat("as-overview", e.EnrichInfo.Asn)
+			if err == nil {
+				if asn_data["data"] != nil {
+					asn_datablock := asn_data["data"].(map[string]interface{})
+					if asn_datablock["holder"] != nil {
+						e.EnrichInfo.Holder = asn_datablock["holder"].(string)
+					}
+				}
+			}
+
+			// Get geolocation from RipeStat - https://stat.ripe.net/data/geoloc/data.json?resource=
+			if e.EnrichInfo.Prefix != "unknown" {
+				location_data, err := e.queryRipeStat("maxmind-geo-lite", e.EnrichInfo.Prefix)
+				if err == nil {
+					if location_data["data"] != nil {
+						location_data_located_resources := location_data["data"].(map[string]interface{})["located_resources"].([]interface{})
+						if len(location_data_located_resources) > 0 {
+							location_data_located_resources_locations := location_data_located_resources[0].(map[string]interface{})["locations"].([]interface{})
+							if len(location_data_located_resources_locations) > 0 {
+								location_data_located_resources_location := location_data_located_resources_locations[0].(map[string]interface{})
+								e.EnrichInfo.City = location_data_located_resources_location["city"].(string)
+								e.EnrichInfo.Country = location_data_located_resources_location["country"].(string)
+							}
+						}
+					}
 				}
 			}
 		}
 	}
-
 	return &e.EnrichInfo
 }
 
@@ -152,27 +158,27 @@ func (e *Enricher) whoisEnrichment() []string {
 	return abusemails
 }
 
-func (e *Enricher) queryRipeStat(resource string, query string) map[string]interface{} {
+func (e *Enricher) queryRipeStat(resource string, query string) (map[string]interface{}, error) {
 	url := fmt.Sprintf("https://stat.ripe.net/data/%s/data.json?resource=%s&sourceapp=%s", resource, query, e.ripeStatSourceApp)
 
 	resp, err := http.Get(url)
 	if err != nil {
 		logrus.Debug("enricher: queryRipeStat - could not get data from ", url)
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Debug("enricher: queryRipeStat - could not read response body from ", url)
-		return nil
+		return nil, err
 	}
 	var data map[string]interface{}
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		logrus.Debug("enricher: queryRipeStat - could not unmarshal response body from ", url)
-		return nil
+		return nil, err
 	}
 
-	return data
+	return data, nil
 }
