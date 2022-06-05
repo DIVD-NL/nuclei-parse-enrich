@@ -31,7 +31,7 @@ type Enricher struct {
 
 func NewEnricher() *Enricher {
 	return &Enricher{
-		rs: ripestat.NewRipeStatClient(ripeStatSourceApp),
+		rs: ripestat.NewRipeStatClient(ripeStatSourceApp, 10),
 	}
 }
 
