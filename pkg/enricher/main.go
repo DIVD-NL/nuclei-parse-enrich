@@ -210,6 +210,9 @@ func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
 }
 
 func (e *Enricher) queryRipeStat(resource string, query string) (map[string]interface{}, error) {
+	if query == "" {
+		return nil, fmt.Errorf("empty query for resource %v", resource)
+	}
 	url := fmt.Sprintf("https://stat.ripe.net/data/%s/data.json?resource=%s&sourceapp=%s", resource, query, ripeStatSourceApp)
 
 	resp, err := http.Get(url)

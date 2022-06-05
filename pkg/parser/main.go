@@ -48,8 +48,16 @@ func (p *Parser) ProcessNucleiScan() {
 }
 
 func (p *Parser) EnrichScanRecords() {
-	for _, record := range p.ScanRecords {
-		enricher := enricher.NewEnricher(record.Ip)
+	ipAddrs := make(map[string]struct{})
+	for i, record := range p.ScanRecords {
+		if record.Ip == "" {
+			logrus.Warnf("scan record %d contains empty IP address, skipping: %+v", i, record)
+			continue
+		}
+		ipAddrs[record.Ip] = struct{}{}
+	}
+	for ipAddr := range ipAddrs {
+		enricher := enricher.NewEnricher(ipAddr)
 		enricher.Enrich()
 
 		p.Enrichment = append(p.Enrichment, enricher.EnrichInfo)
@@ -68,7 +76,7 @@ func (p *Parser) MergeScanEnrichment() {
 
 	for _, record := range p.ScanRecords {
 		for _, enrichment := range p.Enrichment {
-			if ok := record.Ip == enrichment.Ip; ok {
+			if record.Ip == enrichment.Ip {
 				mergeResult.EnrichInfo = enrichment
 				mergeResult.NucleiJsonRecord = record
 				p.MergeResults = append(p.MergeResults, mergeResult)
@@ -82,7 +90,7 @@ func (p *Parser) MergeScanEnrichment() {
 func (p *Parser) WriteOutput(outputFile *os.File) {
 	logrus.Debug("parser: WriteOutput - start")
 
-	flattened := make(map[string]interface{})
+	flattened := make(map[string]types.MergeResult)
 	for _, mergeResult := range p.MergeResults {
 		flattened[mergeResult.EnrichInfo.Ip] = mergeResult
 	}
