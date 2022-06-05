@@ -12,7 +12,6 @@ import (
 	"nuclei-parse-enrich/pkg/types"
 	"os"
 	"sync"
-	"time"
 
 	//"time"
 
@@ -88,7 +87,7 @@ func (p *Parser) EnrichScanRecords() {
 		ipAddr := record["ip"]
 		limitCh <- true // block if limit is reached
 		go func() {
-			logrus.Debug("scheduled: %v", time.Now())
+			//logrus.Debug("scheduled: %v", time.Now())
 			wg.Add(1) // gets marked as Done in resultCh loop
 			resultCh <- enricher.EnrichIP(ipAddr)
 			<-limitCh
