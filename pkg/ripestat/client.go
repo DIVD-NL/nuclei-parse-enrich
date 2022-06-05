@@ -36,6 +36,14 @@ func (c *Client) GetNetworkInfo(ipAddr string) (NetworkInfo, error) {
 	return ConvertNetworkInfoData(data)
 }
 
+func (c *Client) GetASOverview(asn string) (ASOverview, error) {
+	data, err := c.sendRequest("as-overview", asn)
+	if err != nil {
+		return ASOverview{}, err
+	}
+	return ConvertASOverviewData(data)
+}
+
 func (c *Client) sendRequest(endpoint, resource string) ([]byte, error) {
 	endpoint = url.QueryEscape(endpoint)
 	resource = url.QueryEscape(resource)

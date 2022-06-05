@@ -41,3 +41,24 @@ type NetworkInfo struct {
 	ASNs   []string `json:"asns"`
 	Prefix string   `json:"prefix"`
 }
+
+type ASOverviewBase struct {
+	ResponseBase
+	Data ASOverview `json:"data"`
+}
+
+type ASOverview struct {
+	Type           string  `json:"type"`
+	Resource       string  `json:"resource"`
+	Block          ASBlock `json:"block"`
+	Holder         string  `json:"holder"`
+	Announced      bool    `json:"announced"`
+	QueryStartTime string  `json:"query_starttime"`
+	QueryEndTime   string  `json:"query_endtime"`
+}
+
+type ASBlock struct {
+	Resource    string `json:"resource"`
+	Description string `json:"desc"`
+	Name        string `json:"name"`
+}

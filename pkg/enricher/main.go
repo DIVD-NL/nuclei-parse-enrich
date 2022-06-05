@@ -103,24 +103,16 @@ func (e *Enricher) enrichPrefixAndASNFromIP(ipAddr string) (string, string) {
 func (e *Enricher) enrichHolderFromASN(asn string) string {
 	holder := "unknown"
 
-	// Get ASN info from ripeStat - https://stat.ripe.net/data/as-overview/data.json?resource=
 	if asn == "unknown" {
 		return holder
 	}
 
-	asn_data, err := e.queryRipeStat("as-overview", asn)
+	asOverview, err := e.rs.GetASOverview(asn)
 	if err != nil {
 		return holder
 	}
 
-	if asn_data["data"] != nil {
-		asn_datablock := asn_data["data"].(map[string]interface{})
-		if asn_datablock["holder"] != nil {
-			holder = asn_datablock["holder"].(string)
-		}
-	}
-
-	return holder
+	return asOverview.Holder
 }
 
 func (e *Enricher) enrichCityAndCountryFromPrefix(prefix string) (string, string) {
