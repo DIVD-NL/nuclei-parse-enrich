@@ -11,6 +11,8 @@ import (
 	"nuclei-parse-enrich/pkg/enricher"
 	"nuclei-parse-enrich/pkg/types"
 	"os"
+	"sync"
+	//"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -56,12 +58,35 @@ func (p *Parser) EnrichScanRecords() {
 		}
 		ipAddrs[record.Ip] = struct{}{}
 	}
-	enricher := enricher.NewEnricher()
-	for ipAddr := range ipAddrs {
-		info := enricher.EnrichIP(ipAddr)
 
-		p.Enrichment = append(p.Enrichment, info)
+	enricher := enricher.NewEnricher()
+	limitCh := make(chan bool, 8) // XXX
+	resultCh := make(chan types.EnrichInfo, 3)
+
+	var wg sync.WaitGroup
+	go func() {
+		for res := range resultCh {
+			//logrus.Debugf("received: %+v", res)
+			p.Enrichment = append(p.Enrichment, res)
+			wg.Done()
+		}
+	}()
+
+	for ipAddr := range ipAddrs {
+		wg.Add(1)
+		ipAddr := ipAddr
+		limitCh <- true
+		go func() {
+			//logrus.Infof("scheduled: %v", time.Now())
+			wg.Add(1) // gets marked as Done in resultCh loop
+			resultCh <- enricher.EnrichIP(ipAddr)
+			<-limitCh
+			wg.Done()
+		}()
 	}
+	wg.Wait()
+	close(resultCh)
+	close(limitCh)
 }
 
 func (p *Parser) MergeScanEnrichment() {
