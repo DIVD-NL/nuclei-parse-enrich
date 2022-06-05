@@ -56,11 +56,11 @@ func (p *Parser) EnrichScanRecords() {
 		}
 		ipAddrs[record.Ip] = struct{}{}
 	}
+	enricher := enricher.NewEnricher()
 	for ipAddr := range ipAddrs {
-		enricher := enricher.NewEnricher(ipAddr)
-		enricher.Enrich()
+		info := enricher.EnrichIP(ipAddr)
 
-		p.Enrichment = append(p.Enrichment, enricher.EnrichInfo)
+		p.Enrichment = append(p.Enrichment, info)
 	}
 }
 

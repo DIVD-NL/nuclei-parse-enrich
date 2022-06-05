@@ -6,11 +6,6 @@ package enricher
  */
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -31,35 +26,26 @@ const (
 )
 
 type Enricher struct {
-	types.EnrichInfo
 	rs *ripestat.Client
 }
 
-func NewEnricher(ip string) *Enricher {
-	c := ripestat.NewRipeStatClient(ripeStatSourceApp)
+func NewEnricher() *Enricher {
 	return &Enricher{
-		EnrichInfo: types.EnrichInfo{
-			Ip: ip,
-		},
-		rs: c,
+		rs: ripestat.NewRipeStatClient(ripeStatSourceApp),
 	}
 }
 
-func (e *Enricher) Enrich() *types.EnrichInfo {
-	return e.EnrichIP(e.Ip)
-}
-
-func (e *Enricher) EnrichIP(ipAddr string) *types.EnrichInfo {
-	e.EnrichInfo = types.EnrichInfo{
+func (e *Enricher) EnrichIP(ipAddr string) types.EnrichInfo {
+	ret := types.EnrichInfo{
 		Ip: ipAddr,
 	}
 
-	e.EnrichInfo.Abuse, e.EnrichInfo.Abuse_source = e.enrichAbuseFromIP(ipAddr)
-	e.EnrichInfo.Prefix, e.EnrichInfo.Asn = e.enrichPrefixAndASNFromIP(ipAddr)
-	e.EnrichInfo.Holder = e.enrichHolderFromASN(e.EnrichInfo.Asn)
-	e.EnrichInfo.City, e.EnrichInfo.Country = e.enrichCityAndCountryFromPrefix(e.EnrichInfo.Prefix)
+	ret.Abuse, ret.Abuse_source = e.enrichAbuseFromIP(ipAddr)
+	ret.Prefix, ret.Asn = e.enrichPrefixAndASNFromIP(ipAddr)
+	ret.Holder = e.enrichHolderFromASN(ret.Asn)
+	ret.City, ret.Country = e.enrichCityAndCountryFromPrefix(ret.Prefix)
 
-	return &e.EnrichInfo
+	return ret
 }
 
 func (e *Enricher) enrichAbuseFromIP(ipAddr string) (string, string) {
@@ -77,7 +63,7 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (string, string) {
 	}
 
 	// Fallback to whois
-	contacts_from_whois := e.whoisEnrichment()
+	contacts_from_whois := e.whoisEnrichmentIP(ipAddr)
 	if len(contacts_from_whois) > 0 {
 		return strings.Join(contacts_from_whois, ";"), "whois"
 	}
@@ -143,10 +129,6 @@ func (e *Enricher) enrichCityAndCountryFromPrefix(prefix string) (string, string
 	return geolocation.LocatedResources[0].Locations[0].City, geolocation.LocatedResources[0].Locations[0].Country
 }
 
-func (e *Enricher) whoisEnrichment() []string {
-	return e.whoisEnrichmentIP(e.Ip)
-}
-
 func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
 	logrus.Debug("enricher: ripestat has no abuse mails for us, executing whoisEnrichment on IP address: ", ipAddr)
 
@@ -179,36 +161,4 @@ func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
 	sort.Strings(abusemails)
 
 	return abusemails
-}
-
-func (e *Enricher) queryRipeStat(resource string, query string) (map[string]interface{}, error) {
-	if query == "" {
-		return nil, fmt.Errorf("empty query for resource %v", resource)
-	}
-	url := fmt.Sprintf("https://stat.ripe.net/data/%s/data.json?resource=%s&sourceapp=%s", resource, query, ripeStatSourceApp)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		logrus.Debug("enricher: queryRipeStat - could not get data from ", url)
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logrus.Debug("enricher: queryRipeStat - could not read response body from ", url)
-		return nil, err
-	}
-
-	var data map[string]interface{}
-
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		logrus.Debug("enricher: queryRipeStat - could not unmarshal response body from ", url)
-		return nil, err
-	}
-	if data == nil {
-		return data, errors.New("enricher: ripestat is down " + url)
-	}
-	return data, nil
 }
