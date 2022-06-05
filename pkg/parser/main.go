@@ -13,8 +13,6 @@ import (
 	"os"
 	"sync"
 
-	//"time"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -71,6 +69,7 @@ func (p *Parser) EnrichScanRecords() {
 
 	limitCh := make(chan bool, 8) // Ripe API limit is 8 concurrent requests
 	resultCh := make(chan types.EnrichInfo, len(ipAddrsAndHostnames))
+	seenIps := map[string]bool{}
 
 	var wg sync.WaitGroup
 	go func() {
@@ -80,21 +79,24 @@ func (p *Parser) EnrichScanRecords() {
 		}
 	}()
 
-	logrus.Debug("parser: EnrichScanRecords - enriching ", len(ipAddrsAndHostnames), " records")
-
 	for _, record := range ipAddrsAndHostnames {
 		wg.Add(1)
 		ipAddr := record["ip"]
 		limitCh <- true // block if limit is reached
 		go func() {
-			//logrus.Debug("scheduled: %v", time.Now())
-			wg.Add(1) // gets marked as Done in resultCh loop
-			resultCh <- enricher.EnrichIP(ipAddr)
-			<-limitCh
+			if !seenIps[ipAddr] {
+				wg.Add(1) // gets marked as Done in resultCh loop
+				enricher.EnrichIP(ipAddr)
+				resultCh <- enricher.EnrichIP(ipAddr)
+				<-limitCh
+			} else {
+				logrus.Debug("parser: EnrichScanRecords - skipped IP: ", ipAddr)
+			}
+			seenIps[ipAddr] = true
 			wg.Done()
 		}()
-
 	}
+
 	wg.Wait()
 	close(resultCh)
 	close(limitCh)
@@ -110,9 +112,8 @@ func (p *Parser) MergeScanEnrichment() {
 	}
 
 	for _, record := range p.ScanRecords {
-		logrus.Debug("parser: MergeScanEnrichment - merging record: ", record.Ip, " (", record.Host, ")")
 		if seenHosts[record.Host] {
-			logrus.Debug("parser: MergeScanEnrichment - skipping host: ", record.Host)
+			logrus.Debug("parser: MergeScanEnrichment - skipping duped virtual host: ", record.Host)
 			continue
 		}
 
@@ -122,7 +123,6 @@ func (p *Parser) MergeScanEnrichment() {
 			mergeResult.EnrichInfo = enrichment
 			mergeResult.NucleiJsonRecord = record
 			p.MergeResults = append(p.MergeResults, mergeResult)
-			logrus.Debug("parser: MergeScanEnrichment - merged record: ", record.Ip, " (", record.Host, ")")
 			break
 		}
 	}
