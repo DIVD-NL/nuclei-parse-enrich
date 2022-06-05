@@ -62,3 +62,42 @@ type ASBlock struct {
 	Description string `json:"desc"`
 	Name        string `json:"name"`
 }
+
+type MaxmindGeoLiteBase struct {
+	ResponseBase
+	Data MaxmindGeoLite
+}
+
+type MaxmindGeoLite struct {
+	LocatedResources   []LocatedResource `json:"located_resources"`
+	UnknownPercentages UnknownPercentage `json:"unknown_percentage"`
+	Parameters         MaxmindParameters `json:"parameters"`
+	ResultTime         string            `json:"result_time"`
+	LatestTime         string            `json:"latest_time"`
+	EarliestTime       string            `json:"earliest_time"`
+}
+
+type LocatedResource struct {
+	Resource  string             `json:"resource"`
+	Locations []ResourceLocation `json:"locations"`
+}
+
+type ResourceLocation struct {
+	Country           string   `json:"country"`
+	City              string   `json:"city"`
+	Resources         []string `json:"resources"`
+	Latitude          float64  `json:"latitude"`  // XXX: another data type?
+	Longitude         float64  `json:"longitude"` // XXX: another data type?
+	CoveredPercentage float64  `json:"covered_percentage"`
+	UnknownPercentage float64  `json:"unknown_percentage"`
+}
+
+type UnknownPercentage struct {
+	V4 float64 `json:"v4"`
+	V6 float64 `json:"v6"`
+}
+
+type MaxmindParameters struct {
+	ParameterBase
+	Resolution string `json:"resolution"`
+}

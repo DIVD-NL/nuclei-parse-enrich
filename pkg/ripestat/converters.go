@@ -43,3 +43,16 @@ func ConvertASOverviewData(data []byte) (ASOverview, error) {
 	}
 	return resp.Data, nil
 }
+
+func ConvertGeolocationData(data []byte) (MaxmindGeoLite, error) {
+	if len(data) == 0 {
+		return MaxmindGeoLite{}, fmt.Errorf("empty data")
+	}
+
+	resp := MaxmindGeoLiteBase{}
+	err := json.Unmarshal(data, &resp)
+	if err != nil {
+		return MaxmindGeoLite{}, err
+	}
+	return resp.Data, nil
+}

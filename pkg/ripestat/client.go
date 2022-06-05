@@ -44,6 +44,14 @@ func (c *Client) GetASOverview(asn string) (ASOverview, error) {
 	return ConvertASOverviewData(data)
 }
 
+func (c *Client) GetGeolocationData(prefix string) (MaxmindGeoLite, error) {
+	data, err := c.sendRequest("maxmind-geo-lite", prefix)
+	if err != nil {
+		return MaxmindGeoLite{}, err
+	}
+	return ConvertGeolocationData(data)
+}
+
 func (c *Client) sendRequest(endpoint, resource string) ([]byte, error) {
 	endpoint = url.QueryEscape(endpoint)
 	resource = url.QueryEscape(resource)

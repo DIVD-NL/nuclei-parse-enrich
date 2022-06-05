@@ -68,6 +68,7 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (string, string) {
 
 	contacts, err := e.rs.GetAbuseContacts(ipAddr)
 	if err != nil {
+		logrus.Warnf("abuse contacts err: %v", err)
 		return abuse, abuseSource
 	}
 
@@ -90,6 +91,7 @@ func (e *Enricher) enrichPrefixAndASNFromIP(ipAddr string) (string, string) {
 
 	netInfo, err := e.rs.GetNetworkInfo(ipAddr)
 	if err != nil {
+		logrus.Warnf("network info err: %v", err)
 		return prefix, asn
 	}
 
@@ -109,6 +111,7 @@ func (e *Enricher) enrichHolderFromASN(asn string) string {
 
 	asOverview, err := e.rs.GetASOverview(asn)
 	if err != nil {
+		logrus.Warnf("holder err: %v", err)
 		return holder
 	}
 
@@ -123,24 +126,21 @@ func (e *Enricher) enrichCityAndCountryFromPrefix(prefix string) (string, string
 		return city, country
 	}
 
-	location_data, err := e.queryRipeStat("maxmind-geo-lite", prefix)
+	geolocation, err := e.rs.GetGeolocationData(prefix)
 	if err != nil {
+		logrus.Warnf("geolocation err: %v", err)
 		return city, country
 	}
 
-	if location_data["data"] != nil {
-		location_data_located_resources := location_data["data"].(map[string]interface{})["located_resources"].([]interface{})
-		if len(location_data_located_resources) > 0 {
-			location_data_located_resources_locations := location_data_located_resources[0].(map[string]interface{})["locations"].([]interface{})
-			if len(location_data_located_resources_locations) > 0 {
-				location_data_located_resources_location := location_data_located_resources_locations[0].(map[string]interface{})
-				city = location_data_located_resources_location["city"].(string)
-				country = location_data_located_resources_location["country"].(string)
-			}
-		}
+	if len(geolocation.LocatedResources) == 0 {
+		return city, country
 	}
 
-	return city, country
+	if len(geolocation.LocatedResources[0].Locations) == 0 {
+		return city, country
+	}
+
+	return geolocation.LocatedResources[0].Locations[0].City, geolocation.LocatedResources[0].Locations[0].Country
 }
 
 func (e *Enricher) whoisEnrichment() []string {
