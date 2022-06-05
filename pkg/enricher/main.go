@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"nuclei-parse-enrich/pkg/ripestat"
 	"nuclei-parse-enrich/pkg/types"
 
 	"github.com/likexian/whois"
@@ -31,13 +32,16 @@ const (
 
 type Enricher struct {
 	types.EnrichInfo
+	rs *ripestat.Client
 }
 
 func NewEnricher(ip string) *Enricher {
+	c := ripestat.NewRipeStatClient(ripeStatSourceApp)
 	return &Enricher{
 		EnrichInfo: types.EnrichInfo{
 			Ip: ip,
 		},
+		rs: c,
 	}
 }
 
@@ -62,27 +66,13 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (string, string) {
 	abuse := "unknown"
 	abuseSource := ""
 
-	// Get abuse info - https://stat.ripe.net/data/abuse-contact-finder/data.<format>?<parameters>
-	ripestat_abuse_reply, err := e.queryRipeStat("abuse-contact-finder", ipAddr)
+	contacts, err := e.rs.GetAbuseContacts(ipAddr)
 	if err != nil {
 		return abuse, abuseSource
 	}
 
-	abuse_contacts_ripeStat := []string{}
-
-	if ripestat_abuse_reply != nil {
-		abuse_reply_data := ripestat_abuse_reply["data"].(map[string]interface{})
-		if abuse_reply_data != nil {
-			abuse_reply_data_abuse_contacts := abuse_reply_data["abuse_contacts"].([]interface{})
-
-			for _, abuse_contact := range abuse_reply_data_abuse_contacts {
-				abuse_contacts_ripeStat = append(abuse_contacts_ripeStat, abuse_contact.(string))
-			}
-		}
-	}
-
-	if len(abuse_contacts_ripeStat) > 0 {
-		return strings.Join(abuse_contacts_ripeStat, ";"), "ripeSTAT"
+	if len(contacts) > 0 {
+		return strings.Join(contacts, ";"), "ripeSTAT"
 	}
 
 	// Fallback to whois
