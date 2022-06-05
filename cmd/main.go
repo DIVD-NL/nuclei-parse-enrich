@@ -31,14 +31,17 @@ func init() {
 func main() {
 
 	options := Options{}
-	goflags := flags.NewParser(&options,
-		flags.Default)
+	goflags := flags.NewParser(&options, flags.Default)
 
 	parser := parser.Parser{}
 
 	_, err := goflags.Parse()
 	if err != nil {
-		logrus.Fatal("Error parsing flags")
+		if errFlags, ok := err.(*flags.Error); ok && errFlags.Type == flags.ErrHelp {
+			// flags automatically prints usage
+			os.Exit(0)
+		}
+		logrus.Fatalf("Error parsing flags: %v", err)
 	}
 
 	if noOutputProvided := options.Output == ""; noOutputProvided {
