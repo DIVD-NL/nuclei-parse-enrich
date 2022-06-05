@@ -117,10 +117,6 @@ func (p *Parser) MergeScanEnrichment() {
 		}
 
 		for _, enrichment := range p.Enrichment {
-			if seen := seenHosts[record.Host]; seen {
-				continue
-			}
-
 			seenHosts[record.Host] = true
 
 			mergeResult.EnrichInfo = enrichment
