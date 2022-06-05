@@ -18,7 +18,7 @@ type NucleiJsonRecord struct {
 		Name        string   `json:"name"`
 		Author      []string `json:"author"`
 		Tags        []string `json:"tags"`
-		Reference   string   `json:"reference"`
+		Reference   []string `json:"reference"`
 		Severity    string   `json:"severity"`
 		Description string   `json:"description"`
 	} `json:"info"`
