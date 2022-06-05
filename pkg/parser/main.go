@@ -12,6 +12,8 @@ import (
 	"nuclei-parse-enrich/pkg/types"
 	"os"
 	"sync"
+	"time"
+
 	//"time"
 
 	"github.com/sirupsen/logrus"
@@ -50,39 +52,49 @@ func (p *Parser) ProcessNucleiScan() {
 }
 
 func (p *Parser) EnrichScanRecords() {
-	ipAddrs := make(map[string]struct{})
+	logrus.Debug("parser: MergeScanEnrichment - start")
+	enricher := enricher.NewEnricher()
+
+	ipAddrsAndHostnames := []map[string]string{}
+
 	for i, record := range p.ScanRecords {
 		if record.Ip == "" {
 			logrus.Warnf("scan record %d contains empty IP address, skipping: %+v", i, record)
 			continue
 		}
-		ipAddrs[record.Ip] = struct{}{}
+
+		ipAddrsAndHostnames = append(ipAddrsAndHostnames, map[string]string{
+			"ip":   record.Ip,
+			"host": record.Host,
+		})
+
 	}
 
-	enricher := enricher.NewEnricher()
-	limitCh := make(chan bool, 8) // XXX
-	resultCh := make(chan types.EnrichInfo, 3)
+	limitCh := make(chan bool, 8) // Ripe API limit is 8 concurrent requests
+	resultCh := make(chan types.EnrichInfo, len(ipAddrsAndHostnames))
 
 	var wg sync.WaitGroup
 	go func() {
 		for res := range resultCh {
-			//logrus.Debugf("received: %+v", res)
 			p.Enrichment = append(p.Enrichment, res)
 			wg.Done()
 		}
 	}()
 
-	for ipAddr := range ipAddrs {
+	logrus.Debug("parser: EnrichScanRecords - enriching ", len(ipAddrsAndHostnames), " records")
+
+	for _, record := range ipAddrsAndHostnames {
 		wg.Add(1)
-		ipAddr := ipAddr
-		limitCh <- true
+		ipAddr := record["ip"]
+		limitCh <- true // block if limit is reached
 		go func() {
-			//logrus.Infof("scheduled: %v", time.Now())
+			logrus.Debug("scheduled: %v", time.Now())
 			wg.Add(1) // gets marked as Done in resultCh loop
 			resultCh <- enricher.EnrichIP(ipAddr)
 			<-limitCh
 			wg.Done()
 		}()
+
 	}
 	wg.Wait()
 	close(resultCh)
@@ -90,9 +102,8 @@ func (p *Parser) EnrichScanRecords() {
 }
 
 func (p *Parser) MergeScanEnrichment() {
-	logrus.Debug("parser: MergeScanEnrichment - start")
-
 	mergeResult := types.MergeResult{}
+	seenHosts := map[string]bool{}
 
 	if len(p.Enrichment) < 1 {
 		logrus.Debug("Length of ips in scan is ", len(p.ScanRecords))
@@ -100,29 +111,37 @@ func (p *Parser) MergeScanEnrichment() {
 	}
 
 	for _, record := range p.ScanRecords {
+		logrus.Debug("parser: MergeScanEnrichment - merging record: ", record.Ip, " (", record.Host, ")")
+		if seenHosts[record.Host] {
+			logrus.Debug("parser: MergeScanEnrichment - skipping host: ", record.Host)
+			continue
+		}
+
 		for _, enrichment := range p.Enrichment {
-			if record.Ip == enrichment.Ip {
-				mergeResult.EnrichInfo = enrichment
-				mergeResult.NucleiJsonRecord = record
-				p.MergeResults = append(p.MergeResults, mergeResult)
+			if seen := seenHosts[record.Host]; seen {
+				continue
 			}
+
+			seenHosts[record.Host] = true
+
+			mergeResult.EnrichInfo = enrichment
+			mergeResult.NucleiJsonRecord = record
+			p.MergeResults = append(p.MergeResults, mergeResult)
+			logrus.Debug("parser: MergeScanEnrichment - merged record: ", record.Ip, " (", record.Host, ")")
+			break
 		}
 	}
 
-	logrus.Debug("parser: MergeScanEnrichment - merged ", len(p.MergeResults), " records")
 }
 
 func (p *Parser) WriteOutput(outputFile *os.File) {
-	logrus.Debug("parser: WriteOutput - start")
 
-	flattened := make(map[string]types.MergeResult)
-	for _, mergeResult := range p.MergeResults {
-		flattened[mergeResult.EnrichInfo.Ip] = mergeResult
-	}
+	flattened := []types.MergeResult{}
+	flattened = append(flattened, p.MergeResults...)
 
 	encoder := json.NewEncoder(outputFile)
 	encoder.SetIndent("", "  ")
 	encoder.Encode(flattened)
 
-	logrus.Debug("parser: WriteOutput - ended")
+	logrus.Debug("parser: WriteOutput - finished writing ", len(flattened), " records")
 }
