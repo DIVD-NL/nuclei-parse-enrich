@@ -88,26 +88,16 @@ func (e *Enricher) enrichPrefixAndASNFromIP(ipAddr string) (string, string) {
 	prefix := "unknown"
 	asn := "unknown"
 
-	// Get ASN - https://stat.ripe.net/data/network-info/data.json?resource=
-	asn_reply, err := e.queryRipeStat("network-info", ipAddr)
+	netInfo, err := e.rs.GetNetworkInfo(ipAddr)
 	if err != nil {
 		return prefix, asn
 	}
 
-	asn_reply_data := asn_reply["data"].(map[string]interface{})
-
-	if replyPrefix, ok := asn_reply_data["prefix"]; ok {
-		prefix = replyPrefix.(string)
+	if len(netInfo.ASNs) == 0 {
+		return netInfo.Prefix, asn
 	}
 
-	if asns, ok := asn_reply_data["asns"]; ok {
-		asn_reply_data_asn := asns.([]interface{})
-		if len(asn_reply_data_asn) > 0 {
-			asn = asn_reply_data_asn[0].(string)
-		}
-	}
-
-	return prefix, asn
+	return netInfo.Prefix, netInfo.ASNs[0]
 }
 
 func (e *Enricher) enrichHolderFromASN(asn string) string {

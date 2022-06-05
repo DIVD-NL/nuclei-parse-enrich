@@ -28,6 +28,14 @@ func (c *Client) GetAbuseContacts(ipAddr string) ([]string, error) {
 	return ConvertAbuseContactsData(data)
 }
 
+func (c *Client) GetNetworkInfo(ipAddr string) (NetworkInfo, error) {
+	data, err := c.sendRequest("network-info", ipAddr)
+	if err != nil {
+		return NetworkInfo{}, err
+	}
+	return ConvertNetworkInfoData(data)
+}
+
 func (c *Client) sendRequest(endpoint, resource string) ([]byte, error) {
 	endpoint = url.QueryEscape(endpoint)
 	resource = url.QueryEscape(resource)

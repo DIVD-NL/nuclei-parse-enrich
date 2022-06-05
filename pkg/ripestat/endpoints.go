@@ -31,3 +31,13 @@ type AbuseContactFinder struct {
 	EarliestTime     string        `json:"earliest_time"`
 	Parameters       ParameterBase `json:"parameters"`
 }
+
+type NetworkInfoBase struct {
+	ResponseBase
+	Data NetworkInfo `json:"data"`
+}
+
+type NetworkInfo struct {
+	ASNs   []string `json:"asns"`
+	Prefix string   `json:"prefix"`
+}

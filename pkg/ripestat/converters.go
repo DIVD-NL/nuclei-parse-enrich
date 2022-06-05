@@ -17,3 +17,16 @@ func ConvertAbuseContactsData(data []byte) ([]string, error) {
 	}
 	return resp.Data.AbuseContacts, nil
 }
+
+func ConvertNetworkInfoData(data []byte) (NetworkInfo, error) {
+	if len(data) == 0 {
+		return NetworkInfo{}, fmt.Errorf("empty data")
+	}
+
+	resp := NetworkInfoBase{}
+	err := json.Unmarshal(data, &resp)
+	if err != nil {
+		return NetworkInfo{}, err
+	}
+	return resp.Data, nil
+}
