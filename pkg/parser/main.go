@@ -12,6 +12,7 @@ import (
 	"nuclei-parse-enrich/pkg/types"
 	"os"
 	"sync"
+
 	//"time"
 
 	"github.com/sirupsen/logrus"
@@ -56,6 +57,7 @@ func (p *Parser) EnrichScanRecords() {
 			logrus.Warnf("scan record %d contains empty IP address, skipping: %+v", i, record)
 			continue
 		}
+
 		ipAddrs[record.Ip] = struct{}{}
 	}
 
@@ -66,18 +68,17 @@ func (p *Parser) EnrichScanRecords() {
 	var wg sync.WaitGroup
 	go func() {
 		for res := range resultCh {
-			//logrus.Debugf("received: %+v", res)
 			p.Enrichment = append(p.Enrichment, res)
 			wg.Done()
 		}
 	}()
 
 	for ipAddr := range ipAddrs {
+		logrus.Debug("enriching IP: ", ipAddr)
 		wg.Add(1)
 		ipAddr := ipAddr
 		limitCh <- true
 		go func() {
-			//logrus.Infof("scheduled: %v", time.Now())
 			wg.Add(1) // gets marked as Done in resultCh loop
 			resultCh <- enricher.EnrichIP(ipAddr)
 			<-limitCh
@@ -115,10 +116,8 @@ func (p *Parser) MergeScanEnrichment() {
 func (p *Parser) WriteOutput(outputFile *os.File) {
 	logrus.Debug("parser: WriteOutput - start")
 
-	flattened := make(map[string]types.MergeResult)
-	for _, mergeResult := range p.MergeResults {
-		flattened[mergeResult.EnrichInfo.Ip] = mergeResult
-	}
+	flattened := []types.MergeResult{}
+	flattened = append(flattened, p.MergeResults...)
 
 	encoder := json.NewEncoder(outputFile)
 	encoder.SetIndent("", "  ")
