@@ -17,6 +17,7 @@ import (
 
 type Options struct {
 	Input  string `short:"i" long:"input" description:"A file with the nuclei scan output" required:"false"`
+	IPfile string `short:"f" long:"file" description:"A simple IP file with one IP address per line" required:"false"`
 	Output string `short:"o" long:"output" description:"A file to write the enriched output to (default output.json)" required:"false"`
 }
 
@@ -34,7 +35,7 @@ func main() {
 	options := Options{}
 	goflags := flags.NewParser(&options, flags.Default)
 
-	nucleiScanParser := parser.Parser{}
+	scanParser := parser.Parser{}
 
 	_, err := goflags.Parse()
 	if err != nil {
@@ -49,7 +50,7 @@ func main() {
 		options.Output = "output.json"
 	}
 
-	if options.Input == "" {
+	if options.Input == "" && options.IPfile == "" {
 		stat, err := os.Stdin.Stat()
 		if err != nil {
 			logrus.Fatalf("Error getting stdin stat: %v", err)
@@ -58,7 +59,14 @@ func main() {
 			logrus.Fatalf("No input file provided and stdin is not a pipe")
 		}
 
-		nucleiScanParser = *nucleiScanParser.NewParser(os.Stdin)
+		scanParser = *scanParser.NewParser(os.Stdin)
+	} else if options.IPfile != "" {
+		file, err := os.Open(options.IPfile)
+		if err != nil {
+			logrus.Fatalf("Error opening ip file: %v", err)
+		}
+		defer file.Close()
+		scanParser = *scanParser.NewSimpleParser(file)
 	} else {
 		file, err := os.Open(options.Input)
 
@@ -67,15 +75,20 @@ func main() {
 		}
 		defer file.Close()
 
-		nucleiScanParser = *nucleiScanParser.NewParser(file)
+		scanParser = *scanParser.NewParser(file)
 	}
 
-	nucleiScanParser.ProcessNucleiScan()
-	nucleiScanParser.EnrichScanRecords()
+	// If we have an IP file onyl, start the simple scan.
+	// Else we asume it's a Nuclei .json file
+	if options.IPfile != "" {
+		scanParser.ProcessSimpleScan()
+	} else {
+		scanParser.ProcessNucleiScan()
+	}
 
+	scanParser.EnrichScanRecords()
 	logrus.Debug("nucleiScanParser: EnrichScanRecords - ended")
-
-	nucleiScanParser.MergeScanEnrichment()
+	scanParser.MergeScanEnrichment()
 
 	outputFile, err := os.Create(options.Output)
 
@@ -83,7 +96,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	defer nucleiScanParser.File.Close()
+	defer scanParser.File.Close()
 
-	nucleiScanParser.WriteOutput(outputFile)
+	scanParser.WriteOutput(outputFile)
 }

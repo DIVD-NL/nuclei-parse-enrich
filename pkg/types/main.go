@@ -14,6 +14,10 @@ type (
 		NucleiJsonRecord
 	}
 
+	SimpleIPRecord struct {
+		Ip string
+	}
+
 	// NucleiJsonRecord TODO: there is more nuclei data than this, but this is the minimum we need to enrich
 	NucleiJsonRecord struct {
 		TemplateId string `json:"template-id"`
