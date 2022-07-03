@@ -90,10 +90,6 @@ func (p *Parser) EnrichScanRecords() {
 		uniqueIPAddresses[record.Ip] = struct{}{}
 	}
 
-	for index, ip := range uniqueIPAddresses {
-		log.Println(index, ip)
-	}
-
 	nucleiEnricher := enricher.NewEnricher()
 
 	limitCh := make(chan bool, 8)
