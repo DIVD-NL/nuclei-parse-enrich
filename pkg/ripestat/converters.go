@@ -1,6 +1,13 @@
 package ripestat
 
+/*
+* https://www.DIVD.nl
+* released under the Apache 2.0 license
+* https://www.apache.org/licenses/LICENSE-2.0
+ */
+
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -11,23 +18,29 @@ func ConvertAbuseContactsData(data []byte) ([]string, error) {
 	}
 
 	resp := AbuseContactFinderBase{}
-	err := json.Unmarshal(data, &resp)
+
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&resp)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ConvertAbuseContactsData: failed to Unmarshal data: %v", err)
 	}
+
 	return resp.Data.AbuseContacts, nil
 }
 
 func ConvertNetworkInfoData(data []byte) (NetworkInfo, error) {
+
 	if len(data) == 0 {
 		return NetworkInfo{}, fmt.Errorf("empty data")
 	}
 
 	resp := NetworkInfoBase{}
 	err := json.Unmarshal(data, &resp)
+
 	if err != nil {
 		return NetworkInfo{}, err
 	}
+
 	return resp.Data, nil
 }
 
@@ -37,9 +50,9 @@ func ConvertASOverviewData(data []byte) (ASOverview, error) {
 	}
 
 	resp := ASOverviewBase{}
-	err := json.Unmarshal(data, &resp)
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&resp)
 	if err != nil {
-		return ASOverview{}, err
+		return ASOverview{}, fmt.Errorf("failed to unmarshal data: %v", err)
 	}
 	return resp.Data, nil
 }
@@ -50,9 +63,9 @@ func ConvertGeolocationData(data []byte) (MaxmindGeoLite, error) {
 	}
 
 	resp := MaxmindGeoLiteBase{}
-	err := json.Unmarshal(data, &resp)
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&resp)
 	if err != nil {
-		return MaxmindGeoLite{}, err
+		return MaxmindGeoLite{}, fmt.Errorf("failed to unmarshal data: %v", err)
 	}
 	return resp.Data, nil
 }
