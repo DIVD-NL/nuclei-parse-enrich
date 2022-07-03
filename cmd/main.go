@@ -2,7 +2,8 @@ package main
 
 /*
 * https://www.DIVD.nl
-* written by Pepijn van der Stap
+* released under the Apache 2.0 license
+* https://www.apache.org/licenses/LICENSE-2.0
  */
 
 import (
@@ -33,7 +34,7 @@ func main() {
 	options := Options{}
 	goflags := flags.NewParser(&options, flags.Default)
 
-	parser := parser.Parser{}
+	nucleiScanParser := parser.Parser{}
 
 	_, err := goflags.Parse()
 	if err != nil {
@@ -50,37 +51,31 @@ func main() {
 
 	if options.Input == "" {
 		stat, err := os.Stdin.Stat()
-
 		if err != nil {
-			logrus.Fatal("Error reading stdin")
+			logrus.Fatalf("Error getting stdin stat: %v", err)
+		}
+		if stat.Mode()&os.ModeNamedPipe == 0 {
+			logrus.Fatalf("No input file provided and stdin is not a pipe")
 		}
 
-		if ok := (stat.Size() > 0); !ok {
-			logrus.Fatal("No input provided")
-		}
-
-		parser = *parser.NewParser(os.Stdin)
-
-	}
-
-	if options.Input != "" {
+		nucleiScanParser = *nucleiScanParser.NewParser(os.Stdin)
+	} else {
 		file, err := os.Open(options.Input)
 
 		if err != nil {
-			logrus.Fatal(err)
+			logrus.Fatalf("Error opening input file: %v", err)
 		}
 		defer file.Close()
 
-		parser = *parser.NewParser(file)
+		nucleiScanParser = *nucleiScanParser.NewParser(file)
 	}
 
-	parser.ProcessNucleiScan()
+	nucleiScanParser.ProcessNucleiScan()
+	nucleiScanParser.EnrichScanRecords()
 
-	parser.EnrichScanRecords()
+	logrus.Debug("nucleiScanParser: EnrichScanRecords - ended")
 
-	logrus.Debug("parser: EnrichScanRecords - ended")
-
-	parser.MergeScanEnrichment()
+	nucleiScanParser.MergeScanEnrichment()
 
 	outputFile, err := os.Create(options.Output)
 
@@ -88,10 +83,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	defer parser.File.Close()
+	defer nucleiScanParser.File.Close()
 
-	parser.WriteOutput(outputFile)
-
-	// parser.OutputWriter.Flush()
-
+	nucleiScanParser.WriteOutput(outputFile)
 }

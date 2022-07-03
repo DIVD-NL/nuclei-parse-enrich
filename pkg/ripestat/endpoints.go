@@ -1,5 +1,11 @@
 package ripestat
 
+/*
+* https://www.DIVD.nl
+* released under the Apache 2.0 license
+* https://www.apache.org/licenses/LICENSE-2.0
+ */
+
 type ResponseBase struct {
 	Messages       []string `json:"messages"`
 	SeeAlso        []string `json:"see_also"`
@@ -15,13 +21,13 @@ type ResponseBase struct {
 	Time           string   `json:"time"`
 }
 
-type ParameterBase struct {
-	Resource string `json:"resource"`
-}
-
 type AbuseContactFinderBase struct {
 	ResponseBase
 	Data AbuseContactFinder `json:"data"`
+}
+
+type ParameterBase struct {
+	Resource string `json:"resource"`
 }
 
 type AbuseContactFinder struct {
@@ -32,14 +38,30 @@ type AbuseContactFinder struct {
 	Parameters       ParameterBase `json:"parameters"`
 }
 
-type NetworkInfoBase struct {
-	ResponseBase
-	Data NetworkInfo `json:"data"`
-}
-
 type NetworkInfo struct {
 	ASNs   []string `json:"asns"`
 	Prefix string   `json:"prefix"`
+}
+
+type ASBlock struct {
+	Resource    string `json:"resource"`
+	Description string `json:"desc"`
+	Name        string `json:"name"`
+}
+
+type UnknownPercentage struct {
+	V4 float64 `json:"v4"`
+	V6 float64 `json:"v6"`
+}
+
+type MaxmindParameters struct {
+	ParameterBase
+	Resolution string `json:"resolution"`
+}
+
+type NetworkInfoBase struct {
+	ResponseBase
+	Data NetworkInfo `json:"data"`
 }
 
 type ASOverviewBase struct {
@@ -55,12 +77,6 @@ type ASOverview struct {
 	Announced      bool    `json:"announced"`
 	QueryStartTime string  `json:"query_starttime"`
 	QueryEndTime   string  `json:"query_endtime"`
-}
-
-type ASBlock struct {
-	Resource    string `json:"resource"`
-	Description string `json:"desc"`
-	Name        string `json:"name"`
 }
 
 type MaxmindGeoLiteBase struct {
@@ -83,21 +99,11 @@ type LocatedResource struct {
 }
 
 type ResourceLocation struct {
-	Country           string   `json:"country"`
-	City              string   `json:"city"`
-	Resources         []string `json:"resources"`
-	Latitude          float64  `json:"latitude"`  // XXX: another data type?
-	Longitude         float64  `json:"longitude"` // XXX: another data type?
-	CoveredPercentage float64  `json:"covered_percentage"`
-	UnknownPercentage float64  `json:"unknown_percentage"`
-}
-
-type UnknownPercentage struct {
-	V4 float64 `json:"v4"`
-	V6 float64 `json:"v6"`
-}
-
-type MaxmindParameters struct {
-	ParameterBase
-	Resolution string `json:"resolution"`
+	Country   string   `json:"country"`
+	City      string   `json:"city"`
+	Resources []string `json:"resources"`
+	// Latitude          float64  `json:"latitude"`  // XXX: another data type?
+	// Longitude         float64  `json:"longitude"` // XXX: another data type?
+	CoveredPercentage float64 `json:"covered_percentage"`
+	UnknownPercentage float64 `json:"unknown_percentage"`
 }
