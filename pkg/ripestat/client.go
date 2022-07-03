@@ -1,7 +1,14 @@
 package ripestat
 
+/*
+* https://www.DIVD.nl
+* released under the Apache 2.0 license
+* https://www.apache.org/licenses/LICENSE-2.0
+ */
+
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"math/rand"
 	"net/http"
@@ -10,7 +17,7 @@ import (
 )
 
 const (
-	DATA_URL = "https://stat.ripe.net/data/"
+	DataUrl = "https://stat.ripe.net/data/"
 )
 
 type Client struct {
@@ -58,21 +65,25 @@ func (c *Client) GetGeolocationData(prefix string) (MaxmindGeoLite, error) {
 }
 
 func (c *Client) send(endpoint, resource string) ([]byte, error) {
-	if c.MaxRetries < 0 {
-		return nil, fmt.Errorf("invalid MaxRetries, expected positive integer")
-	} else if c.MaxRetries == 0 {
+
+	if c.MaxRetries == 0 {
 		return c.sendRequest(endpoint, resource)
 	}
 
+	if c.MaxRetries < 0 {
+		return nil, fmt.Errorf("invalid MaxRetries, expected positive integer")
+	}
+
 	lastTimeout := 1000 * time.Millisecond
-	for i := 0; i < c.MaxRetries; i++ {
+
+	for retries := 0; retries < c.MaxRetries; retries++ {
 		result, err := c.sendRequest(endpoint, resource)
 		if err == nil {
 			return result, err
 		}
-		fmt.Printf("got error %v, sleeping %v\n", err, lastTimeout)
+		logrus.Debugf("got error %v, sleeping %v", err, lastTimeout)
 		time.Sleep(lastTimeout)
-		jitter := time.Duration(rand.Intn(1000)) * time.Millisecond
+		jitter := time.Duration(rand.Intn(2000)) * time.Millisecond
 		lastTimeout += lastTimeout + jitter
 	}
 
@@ -82,17 +93,26 @@ func (c *Client) send(endpoint, resource string) ([]byte, error) {
 func (c *Client) sendRequest(endpoint, resource string) ([]byte, error) {
 	endpoint = url.QueryEscape(endpoint)
 	resource = url.QueryEscape(resource)
-	url := DATA_URL + endpoint + "/data.json?resource=" + resource + "&sourceapp=" + c.SourceApp
 
-	resp, err := http.Get(url)
+	var requestUriRipeSTAT = fmt.Sprintf("%s%s/data.json?resource=%s&sourceapp=%s", DataUrl, endpoint, resource, c.SourceApp)
+
+	resp, err := http.Get(requestUriRipeSTAT)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making http get request to: %s: %v", requestUriRipeSTAT, err)
 	}
-	defer resp.Body.Close()
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logrus.Debugf("error closing body: %v", err)
+		}
+	}(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
 
 	return body, nil

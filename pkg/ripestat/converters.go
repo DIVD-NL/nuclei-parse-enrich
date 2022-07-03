@@ -35,7 +35,7 @@ func ConvertNetworkInfoData(data []byte) (NetworkInfo, error) {
 	}
 
 	resp := NetworkInfoBase{}
-	err := json.Unmarshal(data, &resp)
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&resp)
 
 	if err != nil {
 		return NetworkInfo{}, err
