@@ -7,15 +7,15 @@ package parser
  */
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"nuclei-parse-enrich/pkg/enricher"
 	"nuclei-parse-enrich/pkg/types"
 	"os"
 	"sync"
-
-	//"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -24,14 +24,36 @@ type Parser struct {
 	*json.Decoder
 	*os.File
 	Enrichment   []types.EnrichInfo
+	SimpleIPs    []types.SimpleIPRecord
 	ScanRecords  []types.NucleiJsonRecord
 	MergeResults []types.MergeResult
+}
+
+func (p *Parser) NewSimpleParser(file *os.File) *Parser {
+	return &Parser{
+		File: file,
+	}
 }
 
 func (p *Parser) NewParser(file *os.File) *Parser {
 	return &Parser{
 		Decoder: json.NewDecoder(file),
 		File:    file,
+	}
+}
+
+func (p *Parser) ProcessSimpleScan() {
+	scanner := bufio.NewScanner(p.File)
+	for scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+		var record types.NucleiJsonRecord
+		record.Ip = scanner.Text()
+		p.ScanRecords = append(p.ScanRecords, record)
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
