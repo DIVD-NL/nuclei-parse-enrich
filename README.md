@@ -18,7 +18,7 @@ It will enrich based on the IP address of the host. It mostly queries RipeStat R
 In the event that there is no Abuse Contact information, it will perform a whois lookup.
 
 ## Usage
-Input gets written from standard input, unless a file is provided with the -i flag.
+Input gets written from standard input, unless a file is provided with the -i flag or -f flag.
 By default, output gets written to output.json, but can be specified with use of the -o flag.
 
 For ipinfo support, replace example.env to .env and add your ipinfo token to the ipinfo_token variable.
@@ -31,6 +31,8 @@ For ipinfo support, replace example.env to .env and add your ipinfo token to the
 > make sure you ran nuclei with -json flag
 
 `$ go run cmd/main.go -i /opt/nuclei-output.json`
+
+`$ go run cmd/main.go -f /opt/ips_list.txt`
 
 `$ go build cmd/main.go -o nuclei-enricher`
 
@@ -85,4 +87,4 @@ For ipinfo support, replace example.env to .env and add your ipinfo token to the
 - [ ] Don't enrich ips from a netblock more than once
 - [ ] Add IpInfo as a fallback
 - [ ] filter special characters from abuse emails (testing)
-- [ ] goreleaser 
+- [ ] goreleaser
