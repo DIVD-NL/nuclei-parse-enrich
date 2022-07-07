@@ -7,7 +7,7 @@ It will enrich the output with the following information:
 ### RipeStat REST API's:-
 - ASN Number and Name
 - Geolocation (Country, City) _(if available)_
-- Abuse Contact _(if available))
+- Abuse Contact _(if available)_
 - Prefix (as announced by the ASN)
 
 
