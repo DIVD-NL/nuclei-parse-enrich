@@ -27,6 +27,12 @@ type (
 			Tags        []string `json:"tags"`
 			Reference   []string `json:"reference"`
 			Severity    string   `json:"severity"`
+			Classification struct {
+				CveId []string `json:"cve-id"`
+            			CweId []string `json:"cwe-id"`
+            			CvssMetrics string `json:"cvss-metrics"`
+            			CvssScore float32 `json:"cvss-score"`
+			} `json:"classification"`
 			Description string   `json:"description"`
 		} `json:"info"`
 		Type             string   `json:"type"`
