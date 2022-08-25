@@ -164,13 +164,13 @@ func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
 		return []string{}
 	case 1:
 		// Spare some allocations and a sort if there's only one address found
-		mail, err := mail.ParseAddress(foundMailAddresses[0])
+		email, err := mail.ParseAddress(foundMailAddresses[0])
 		if err != nil {
 			logrus.Debug("enricher: whoisEnrichment - could not parse email address for ", ipAddr)
 			return []string{}
 		}
 
-		return []string{strings.ToLower(mail.Address)}
+		return []string{strings.ToLower(email.Address)}
 	}
 
 	// lower and sort unique
