@@ -176,14 +176,14 @@ func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
 	// lower and sort unique
 	var uniqueMailAddresses = make(map[string]struct{}, len(foundMailAddresses))
 	for _, v := range foundMailAddresses {
-		mail, err := mail.ParseAddress(v)
+		email, err := mail.ParseAddress(v)
 
 		if err != nil {
 			logrus.Debug("enricher: whoisEnrichment - could not parse email address for ", ipAddr)
 			continue
 		}
 
-		uniqueMailAddresses[strings.ToLower(mail.Address)] = struct{}{}
+		uniqueMailAddresses[strings.ToLower(email.Address)] = struct{}{}
 	}
 
 	abuseEmails := make([]string, 0, len(uniqueMailAddresses))
