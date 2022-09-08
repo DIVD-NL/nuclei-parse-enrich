@@ -2,6 +2,11 @@
 
 This package can be used to parse and enrich the output of a [nuclei](https://github.com/projectdiscovery/nuclei) scan.
 
+## Usage
+Input gets written from standard input, unless a file is provided with the -i flag or -f flag.
+By default, output gets written to output.json, but can be specified with use of the -o flag.
+
+
 It will enrich the output with the following information:
 
 ### RipeStat REST API's:-
@@ -10,16 +15,12 @@ It will enrich the output with the following information:
 - Abuse Contact _(if available)_
 - Prefix (as announced by the ASN)
 
-
 ### Whois lookup (fallback)
 - Contact emails _(if available)_
 
 It will enrich based on the IP address of the host. It mostly queries RipeStat REST APIs.
 In the event that there is no Abuse Contact information, it will perform a whois lookup.
 
-## Usage
-Input gets written from standard input, unless a file is provided with the -i flag or -f flag.
-By default, output gets written to output.json, but can be specified with use of the -o flag.
 
 For ipinfo support, replace example.env to .env and add your ipinfo token to the ipinfo_token variable.
 
