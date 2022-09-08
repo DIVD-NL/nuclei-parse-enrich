@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"nuclei-parse-enrich/pkg/ipinfo"
 	"nuclei-parse-enrich/pkg/ripestat"
 	"nuclei-parse-enrich/pkg/types"
 
@@ -20,16 +21,19 @@ import (
 
 var whoisRegexp = regexp.MustCompile("[a-zA-Z\\d.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?(?:\\.[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?)*\\.?[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?(?:\\.[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?)*")
 
-const RipeStatSourceApp = "AS50559-DIVD_NL"
+const (
+	RipeStatSourceApp = "AS50559-DIVD_NL"
+)
 
 type Enricher struct {
 	rs *ripestat.Client
+	is *ipinfo.Client
 }
 
 func NewEnricher() *Enricher {
 	return &Enricher{
 		rs: ripestat.NewRipeStatClient(RipeStatSourceApp, 10),
-		// is: ipinfo.NewIpInfoClient(),
+		is: ipinfo.NewIpInfoClient(3),
 	}
 }
 
