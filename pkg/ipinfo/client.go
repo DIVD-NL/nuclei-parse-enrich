@@ -1,30 +1,28 @@
 package ipinfo
 
+/*
+* https://www.DIVD.nl
+* released under the Apache 2.0 license
+* https://www.apache.org/licenses/LICENSE-2.0
+ */
+
 import (
 	"github.com/ipinfo/go/v2/ipinfo"
-	"net"
 	"os"
 )
 
 type Client struct {
+	*ipinfo.Client
 	MaxRetries int
 }
 
-//
-//func Test() string {
-//	client := ipinfo.NewClient(nil, nil, os.Getenv("IPINFO_TOKEN"))
-//	info, err := client.GetIPInfo(net.ParseIP("194.5.73.0"))
-//	if err != nil {
-//		logrus.Fatal(err)
-//	}
-//
-//	return fmt.Sprintf("%+v", info)
-//}
+func NewIpInfoClient(maxRetries int) *Client {
+	if maxRetries == 0 {
+		maxRetries = 3
+	}
 
-func NewIpInfoClient() *ipinfo.Client {
-	return ipinfo.NewClient(nil, nil, os.Getenv("IPINFO_TOKEN"))
-}
-
-func (c *Client) GetIPInfo(ip net.IP) (*ipinfo.IPInfo, error) {
-	return c.Client.GetIPInfo(ip)
+	return &Client{
+		Client:     ipinfo.NewClient(nil, nil, os.Getenv("IPINFO_TOKEN")),
+		MaxRetries: maxRetries,
+	}
 }

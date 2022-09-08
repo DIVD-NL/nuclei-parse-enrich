@@ -145,6 +145,8 @@ func (p *Parser) MergeScanEnrichment() {
 
 func (p *Parser) WriteOutput(outputFile *os.File) error {
 
+	// TODO: don't drop JSON index
+
 	mergeResultsMap := make(map[string]types.MergeResult)
 
 	for _, mergeResult := range p.MergeResults {
