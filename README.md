@@ -3,33 +3,11 @@
 This package can be used to parse and enrich the output of a [nuclei](https://github.com/projectdiscovery/nuclei) scan.
 
 ## Usage
+
 Input gets written from standard input, unless a file is provided with the -i flag or -f flag.
-By default, output gets written to output.json, but can be specified with use of the -o flag.
-
-
-It will enrich the output with the following information:
-
-### RipeStat REST API's:-
-- ASN Number and Name
-- Geolocation (Country, City) _(if available)_
-- Abuse Contact _(if available)_
-- Prefix (as announced by the ASN)
-
-### Whois lookup (fallback)
-- Contact emails _(if available)_
-
-It will enrich based on the IP address of the host. It mostly queries RipeStat REST APIs.
-In the event that there is no Abuse Contact information, it will perform a whois lookup.
-
-
-For ipinfo support, replace example.env to .env and add your ipinfo token to the ipinfo_token variable.
-
-`$ go get github.com/ipinfo/go/v2/ipinfo`
-
+**When the -f flag is used, you can enrich on a list of ip's!**
 
 #### Example Usage
-
-> make sure you ran nuclei with -json flag
 
 `$ go run cmd/main.go -i /opt/nuclei-output.json`
 
@@ -38,6 +16,32 @@ For ipinfo support, replace example.env to .env and add your ipinfo token to the
 `$ go build cmd/main.go -o nuclei-enricher`
 
 `$ cp scan.json /dev/stdin | ./nuclei-enricher --output scan.enriched.json`
+
+---
+> make sure you ran nuclei with -json flag
+
+---
+By default, output gets written to output.json, but can be specified with use of the -o flag.
+It will enrich the output with the following information:
+### RipeStat REST API's:-
+- ASN Number and Name
+- Geolocation (Country, City) _(if available)_
+- Abuse Contact _(if available)_
+- Prefix (as announced by the ASN)
+---
+### Whois lookup (fallback)
+- Contact emails _(if available)_
+---
+## IPInfo (fallback)
+- Contact emails _(if available)_
+
+It will enrich based on the IP address of the host. It mostly queries RipeStat REST APIs.
+In the event that there is no Abuse Contact information, it will perform a whois lookup or fallback to IPInfo.
+
+For ipinfo support, replace example.env to .env and add your ipinfo token to the ipinfo_token variable.
+
+`$ go get github.com/ipinfo/go/v2/ipinfo`
+
 
 
 
