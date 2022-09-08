@@ -1,4 +1,4 @@
-module nuclei-parse-enrich
+module github.com/DIVD-NL/nuclei-parse-enrich
 
 go 1.19
 

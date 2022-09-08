@@ -10,10 +10,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/enricher"
+	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/types"
 	"io"
 	"log"
-	"nuclei-parse-enrich/pkg/enricher"
-	"nuclei-parse-enrich/pkg/types"
 	"os"
 	"sync"
 
