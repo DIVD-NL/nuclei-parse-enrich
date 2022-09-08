@@ -9,7 +9,7 @@ package main
 import (
 	"os"
 
-	"nuclei-parse-enrich/pkg/parser"
+	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/parser"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/sirupsen/logrus"
@@ -22,10 +22,11 @@ type Options struct {
 }
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(os.Stdout)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors: false,
+
+	logrus.SetLevel(logrus.InfoLevel)
+	logrus.SetFormatter(&logrus.TextFormatter{ // json would be better
+		DisableColors: true,
 		FullTimestamp: true,
 	})
 }
@@ -78,20 +79,21 @@ func main() {
 		scanParser = *scanParser.NewParser(file)
 	}
 
-	// If we have an IP file onyl, start the simple scan.
-	// Else we asume it's a Nuclei .json file
+	// if we have an IP file only, start the simple scan.
+	// otherwise, start processing a nuclei scan output
 	if options.IPfile != "" {
 		scanParser.ProcessSimpleScan()
 	} else {
 		scanParser.ProcessNucleiScan()
 	}
 
+	logrus.Infof("nucleiScanParser: EnrichScanRecords - started working on %d records", len(scanParser.ScanRecords))
 	scanParser.EnrichScanRecords()
-	logrus.Debug("nucleiScanParser: EnrichScanRecords - ended")
+
+	logrus.Info("nucleiScanParser: EnrichScanRecords - ended")
 	scanParser.MergeScanEnrichment()
 
 	outputFile, err := os.Create(options.Output)
-
 	if err != nil {
 		logrus.Fatal(err)
 	}

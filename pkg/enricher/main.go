@@ -7,29 +7,32 @@ package enricher
  */
 
 import (
+	"errors"
 	"net/mail"
-	"regexp"
+	"os"
 	"strings"
 
-	"nuclei-parse-enrich/pkg/ripestat"
-	"nuclei-parse-enrich/pkg/types"
+	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/ipinfo"
+	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/ripestat"
+	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/types"
 
 	"github.com/likexian/whois"
 	"github.com/sirupsen/logrus"
 )
 
-var whoisRegexp = regexp.MustCompile("[a-zA-Z\\d.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?(?:\\.[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?)*\\.?[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?(?:\\.[a-zA-Z\\d](?:[a-zA-Z\\d-]{0,61}[a-zA-Z\\d])?)*")
-
-const RipeStatSourceApp = "AS50559-DIVD_NL"
-
-type Enricher struct {
-	rs *ripestat.Client
-}
-
 func NewEnricher() *Enricher {
+	ipInfoToken := os.Getenv("IPINFO_TOKEN")
+
+	if ipInfoToken != "" {
+		return &Enricher{
+			rs: ripestat.NewRipeStatClient(RipeStatSourceApp, 10),
+			io: ipinfo.NewIpInfoClient(3, ipInfoToken),
+		}
+	}
+
 	return &Enricher{
 		rs: ripestat.NewRipeStatClient(RipeStatSourceApp, 10),
-		// is: ipinfo.NewIpInfoClient(),
+		io: nil,
 	}
 }
 
@@ -64,7 +67,7 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (foundMailAddresses string, 
 
 		return mailAddress.Address, abuseSource
 	}
-
+	//
 	if len(rsEmailAddresses) > 1 {
 		var cleanMailAddresses []string
 
@@ -79,10 +82,26 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (foundMailAddresses string, 
 		return strings.Join(cleanMailAddresses, ";"), abuseSource
 	}
 
-	// Fallback to whois
-	contactsFromWhois := e.whoisEnrichmentIP(ipAddr)
+	// Fallback to whois if no abuse contact was found in whois..
+	contactsFromWhois, err := e.whoisEnrichmentIP(ipAddr)
+	if err != nil {
+		logrus.Warnf("abuse contactsFromWhois err: %v", err)
+		return foundMailAddresses, abuseSource
+	}
+
 	if len(contactsFromWhois) > 0 {
 		return strings.Join(contactsFromWhois, ";"), "whois"
+	}
+
+	// Fallback to ipinfo if no abuse contact was found in whois either
+	abuseContact, err := e.io.GetAbuseContact(ipAddr)
+	if err != nil {
+		logrus.Debugf("abuse contactsFromIpinfo err: %v", err)
+		return foundMailAddresses, abuseSource
+	}
+
+	if abuseContact != "" {
+		return abuseContact, "ipinfo"
 	}
 
 	return foundMailAddresses, abuseSource
@@ -146,44 +165,48 @@ func (e *Enricher) enrichCityAndCountryFromPrefix(prefix string) (string, string
 	return geolocation.LocatedResources[0].Locations[0].City, geolocation.LocatedResources[0].Locations[0].Country
 }
 
-func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
+func (e *Enricher) whoisEnrichmentIP(ipAddr string) ([]string, error) {
 	logrus.Debug("enricher: ripestat has no abuse mails for us, executing whoisEnrichment on IP address: ", ipAddr)
 
 	whoisInfo, err := whois.Whois(ipAddr)
-	if err != nil || whoisInfo == "" {
+	if err != nil {
 		logrus.Debug("enricher: whoisEnrichment - could not get whois info for ", ipAddr)
-		return []string{}
+		return nil, err
+	}
+
+	if whoisInfo == "" {
+		err := errors.New("enricher: whoisEnrichment - whois info is empty for " + ipAddr)
+		return nil, err
 	}
 
 	foundMailAddresses := whoisRegexp.FindAllString(whoisInfo, -1)
 
 	switch len(foundMailAddresses) {
 	case 0:
-		logrus.Debug("enricher: whoisEnrichment - could not find any abuse emails for ", ipAddr)
-		// TODO: fall back to ipinfo. Whois is not always available
-		return []string{}
+		err := errors.New("enricher: whoisEnrichment - could not find any abuse emails for " + ipAddr)
+		return nil, err
 	case 1:
 		// Spare some allocations and a sort if there's only one address found
 		email, err := mail.ParseAddress(foundMailAddresses[0])
 		if err != nil {
-			logrus.Debug("enricher: whoisEnrichment - could not parse email address for ", ipAddr)
-			return []string{}
+			err := errors.New("enricher: whoisEnrichment - could not parse email address for " + ipAddr)
+			return nil, err
 		}
 
-		return []string{strings.ToLower(email.Address)}
+		return []string{strings.ToLower(email.Address)}, nil
 	}
 
 	// lower and sort unique
 	var uniqueMailAddresses = make(map[string]struct{}, len(foundMailAddresses))
-	for _, v := range foundMailAddresses {
-		mail, err := mail.ParseAddress(v)
+	for i, v := range foundMailAddresses {
+		email, err := mail.ParseAddress(v)
 
 		if err != nil {
-			logrus.Debug("enricher: whoisEnrichment - could not parse email address for ", ipAddr)
+			logrus.Debugf("enricher: whoisEnrichment - could not parse email address %d for %s", i, ipAddr)
 			continue
 		}
 
-		uniqueMailAddresses[strings.ToLower(mail.Address)] = struct{}{}
+		uniqueMailAddresses[strings.ToLower(email.Address)] = struct{}{}
 	}
 
 	abuseEmails := make([]string, 0, len(uniqueMailAddresses))
@@ -192,5 +215,5 @@ func (e *Enricher) whoisEnrichmentIP(ipAddr string) []string {
 		abuseEmails = append(abuseEmails, k)
 	}
 
-	return abuseEmails
+	return abuseEmails, nil
 }
