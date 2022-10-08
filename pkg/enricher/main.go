@@ -63,11 +63,12 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (foundMailAddresses string, 
 		mailAddress, err := mail.ParseAddress(rsEmailAddresses[0])
 		if err != nil {
 			logrus.Warnf("abuse foundMailAddresses err: %v", err)
+			return foundMailAddresses, abuseSource
 		}
 
 		return mailAddress.Address, abuseSource
 	}
-	//
+
 	if len(rsEmailAddresses) > 1 {
 		var cleanMailAddresses []string
 
@@ -93,16 +94,16 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (foundMailAddresses string, 
 		return strings.Join(contactsFromWhois, ";"), "whois"
 	}
 
-	// Fallback to ipinfo if no abuse contact was found in whois either
-	abuseContact, err := e.io.GetAbuseContact(ipAddr)
-	if err != nil {
-		logrus.Debugf("abuse contactsFromIpinfo err: %v", err)
-		return foundMailAddresses, abuseSource
-	}
-
-	if abuseContact != "" {
-		return abuseContact, "ipinfo"
-	}
+	//// Fallback to ipinfo if no abuse contact was found in whois either
+	//abuseContact, err := e.io.GetAbuseContact(ipAddr)
+	//if err != nil {
+	//	logrus.Debugf("abuse contactsFromIpinfo err: %v", err)
+	//	return foundMailAddresses, abuseSource
+	//}
+	//
+	//if abuseContact != "" {
+	//	return abuseContact, "ipinfo"
+	//} //@TODO: re-enable
 
 	return foundMailAddresses, abuseSource
 }
