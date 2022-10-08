@@ -76,6 +76,7 @@ func (e *Enricher) enrichAbuseFromIP(ipAddr string) (foundMailAddresses string, 
 			mailAddress, err := mail.ParseAddress(mailAddress)
 			if err != nil {
 				logrus.Warnf("abuse foundMailAddresses err: %v", err)
+				continue
 			}
 			cleanMailAddresses = append(cleanMailAddresses, mailAddress.Address)
 		}

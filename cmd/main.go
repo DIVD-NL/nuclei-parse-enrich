@@ -34,11 +34,11 @@ func init() {
 func main() {
 
 	options := Options{}
-	goflags := flags.NewParser(&options, flags.Default)
+	goFlags := flags.NewParser(&options, flags.Default)
 
 	scanParser := parser.Parser{}
 
-	_, err := goflags.Parse()
+	_, err := goFlags.Parse()
 	if err != nil {
 		if errFlags, ok := err.(*flags.Error); ok && errFlags.Type == flags.ErrHelp {
 			// flags automatically prints usage

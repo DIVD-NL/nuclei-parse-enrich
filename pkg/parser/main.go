@@ -14,6 +14,7 @@ import (
 	"github.com/DIVD-NL/nuclei-parse-enrich/pkg/types"
 	"io"
 	"log"
+	"net"
 	"os"
 	"sync"
 
@@ -77,16 +78,20 @@ func (p *Parser) ProcessNucleiScan() {
 func (p *Parser) EnrichScanRecords() {
 	uniqueIPAddresses := make(map[string]struct{})
 
-	for i, record := range p.ScanRecords {
-		if record.Ip == "" {
-			logrus.Warnf("scan record %d contains empty IP address, skipping: %+v", i, record)
+	for _, record := range p.ScanRecords {
+		ip := net.ParseIP(record.Ip)
+		if ip == nil {
+			logrus.Debug("parser: EnrichScanRecords - skipping invalid IP address: ", record.Ip)
 			continue
 		}
-
-		if record.Ip[0] == '[' {
-			logrus.Debugf("scan record %d contains ipv6 address:: %+v", i, record)
+		if !ip.IsGlobalUnicast() {
+			logrus.Debug("parser: EnrichScanRecords - skipping non-global IP address: ", record.Ip)
+			continue
 		}
-
+		if ip.IsPrivate() {
+			logrus.Debug("parser: EnrichScanRecords - skipping private IP address: ", record.Ip)
+			continue
+		}
 		uniqueIPAddresses[record.Ip] = struct{}{}
 	}
 
