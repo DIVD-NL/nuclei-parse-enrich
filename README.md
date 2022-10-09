@@ -89,6 +89,5 @@ For ipinfo support, replace example.env to .env and add your ipinfo token to the
 
 ## TODO
 
-- [ ] Don't enrich ips from a netblock more than once
 - [ ] filter special characters from abuse emails (testing)
 - [ ] goreleaser
