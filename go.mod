@@ -3,7 +3,7 @@ module github.com/DIVD-NL/nuclei-parse-enrich
 go 1.19
 
 require (
-	github.com/ipinfo/go/v2 v2.8.0
+	github.com/ipinfo/go/v2 v2.9.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/likexian/whois v1.14.2
 	github.com/sirupsen/logrus v1.9.0
