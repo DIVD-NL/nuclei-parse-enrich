@@ -1,0 +1,28 @@
+[{
+    "template-id": "generic-detection",
+    "info": {
+      "name": "Generic Detection",
+      "author": ["Pepijn van der Stap"],
+      "tags": ["tag1", "tag2"],
+      "description": "Example vulnerability detection",
+      "reference": ["https://example.com/reference"],
+      "severity": "info",
+      "metadata": {"max-request": 1},
+      "classification": {"cve-id": null, "cwe-id": ["cwe-200"]}
+    },
+    "matcher-name": "generic",
+    "type": "http",
+    "host": "example.com",
+    "port": "80",
+    "scheme": "http",
+    "url": "http://example.com/",
+    "path": "/",
+    "matched-at": "http://example.com/",
+    "request": "GET / HTTP/1.1\r\nHost: example.com\r\nUser-Agent: Mozilla/5.0\r\nConnection: close\r\nAccept-Encoding: gzip\r\n\r\n",
+    "response": "HTTP/1.1 200 OK\r\nServer: nginx\r\nContent-Type: text/html\r\n\r\n<html><body>Example response</body></html>",
+    "ip": "192.0.2.1",
+    "timestamp": "2022-06-06T08:37:15.398363+02:00",
+    "curl-command": "curl -X 'GET' -H 'Host: example.com' -H 'User-Agent: Mozilla/5.0' 'http://example.com/'",
+    "matcher-status": true
+  }]
+  
