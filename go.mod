@@ -6,7 +6,7 @@ require (
 	github.com/ipinfo/go/v2 v2.9.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/likexian/whois v1.14.4
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.2
 )
 
 require (
